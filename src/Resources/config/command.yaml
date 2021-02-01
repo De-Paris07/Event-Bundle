@@ -1,0 +1,23 @@
+services:
+  _defaults:
+    tags: ['console.command']
+    autowire: true # if you need dependency injection, see next bullet point
+    autoconfigure: true
+
+  ClientEventBundle\Command\:
+    resource: '../../Command/*'
+
+  ClientEventBundle\Command\SubscribeCommand:
+    arguments:
+      - '@client_event.subscription_service'
+      - '%client_event.event_server_address%'
+
+  ClientEventBundle\Command\UnsubscribeCommand:
+    arguments:
+      - '@client_event.subscription_service'
+      - '%client_event.event_server_address%'
+
+  ClientEventBundle\Command\TaskSupportInProcessingStatus:
+    arguments:
+      - '@service_container'
+      - '@doctrine.orm.entity_manager'

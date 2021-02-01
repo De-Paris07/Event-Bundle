@@ -1,0 +1,56 @@
+{
+  "name": "deparis/client-event-bundle",
+  "description": "Client event bundle",
+  "type": "symfony-bundle",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Belyaev Ivan",
+      "email": "de-paris@yandex.ru"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "ClientEventBundle\\": "src"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "ClientEventBundle\\Tests\\": "tests"
+    }
+  },
+  "require": {
+    "php": "^7.1",
+    "doctrine/orm": "^2.6",
+    "guzzlehttp/guzzle": "~6.0|~7.0",
+    "dragonmantank/cron-expression": "^3.0",
+    "react/event-loop": "^1.1",
+    "react/child-process": "^0.6.1",
+    "react/socket": "^1.3",
+    "pda/pheanstalk": "~3.0",
+    "predis/predis": "^1.1",
+    "snc/redis-bundle": "^2.1|^3.0",
+    "symfony/config": "^3.4 || ^4.1 || ^5.0",
+    "symfony/dotenv": "^3.4 || ^4.1 || ^5.0",
+    "symfony/framework-bundle": "^3.4 || ^4.1 || ^5.0",
+    "symfony/monolog-bundle": "^3.3",
+    "symfony/validator": "^3.4 || ^4.1 || ^5.0",
+    "symfony/yaml": "^3.4 || ^4.0 || ^5.0",
+    "ext-json": "*"
+  },
+  "config": {
+    "preferred-install": {
+      "*": "dist"
+    },
+    "sort-packages": true
+  },
+  "conflict": {
+    "symfony/symfony": "<3.4"
+  },
+  "extra": {
+    "symfony": {
+      "id": "01C2BB7VK9WQJPQMHTK399MP3S",
+      "allow-contrib": false
+    }
+  }
+}

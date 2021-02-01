@@ -1,0 +1,114 @@
+services:
+
+  _defaults:
+    autowire: true
+    autoconfigure: true
+
+  event.producer:
+    class: ClientEventBundle\Producer\EventProducer
+    arguments: ['@service_container']
+
+  ClientEventBundle\Producer\EventProducer:
+    alias: event.producer
+
+  ClientEventBundle\Producer\ProducerInterface:
+    alias: event.producer
+
+  Pheanstalk\PheanstalkInterface:
+    alias: leezy.pheanstalk.proxy.default
+
+  queue_dispatcher:
+    class: ClientEventBundle\Dispatcher\QueueEventDispatcher
+    arguments: ['@event.producer']
+
+  ClientEventBundle\Dispatcher\QueueEventDispatcherInterface:
+    alias: queue_dispatcher
+
+  client_event.query_client:
+    class: ClientEventBundle\Query\QueryClient
+
+  ClientEventBundle\Query\QueryClientInterface:
+    alias: client_event.query_client
+
+  client_event.queue_service:
+    class: ClientEventBundle\Services\QueueService
+
+  ClientEventBundle\Services\QueueService:
+    alias: client_event.queue_service
+
+  client_event.event_manager:
+    class: ClientEventBundle\Manager\EventManager
+
+  ClientEventBundle\Manager\EventManager:
+    alias: client_event.event_manager
+
+  client_event.subscription_service:
+    class: ClientEventBundle\Services\SubscriptionService
+    arguments: ['@service_container', '@client_event.event_server_service', '@annotations.reader']
+
+  client_event.event_server_service:
+    class: ClientEventBundle\Services\EventServerService
+
+  ClientEventBundle\Services\EventServerService:
+    alias: client_event.event_server_service
+
+  client_event.validate_service:
+    class: ClientEventBundle\Services\ValidateService
+
+  ClientEventBundle\Services\ValidateService:
+    alias: client_event.validate_service
+
+  client_event.log_service:
+    class: ClientEventBundle\Services\LogService
+
+  ClientEventBundle\Services\LogService:
+    alias: client_event.log_service
+
+  client_event.fields.service:
+    class: ClientEventBundle\Services\FieldsService
+
+  ClientEventBundle\Services\FieldsService:
+    alias: client_event.fields.service
+
+  client_event.virtual.property.service:
+    class: ClientEventBundle\Services\VirtualPropertyService
+
+  ClientEventBundle\Services\VirtualPropertyService:
+    alias: client_event.virtual.property.service
+
+  client_event.telegram.factory:
+    class: ClientEventBundle\Factory\TelegramFactory
+
+  ClientEventBundle\Factory\TelegramFactory:
+    alias: client_event.telegram.factory
+
+  client_event.cache.factory:
+    class: ClientEventBundle\Factory\CacheFactory
+
+  ClientEventBundle\Factory\CacheFactory:
+    alias: client_event.cache.factory
+
+  client_event.telegram.logger:
+    class: ClientEventBundle\Services\TelegramLogger
+    public: true
+
+  ClientEventBundle\Services\TelegramLogger:
+    alias: client_event.telegram.logger
+
+  ClientEventBundle\Repository\EventRepository:
+    tags: { name: doctrine.repository_service }
+
+  ClientEventBundle\Services\ConfigService:
+
+  ClientEventBundle\Services\CacheService:
+
+  client_event.query_subscriber:
+    class: ClientEventBundle\Subscribers\QuerySubscriber
+    tags:
+      - { name: kernel.event_subscriber }
+
+  ClientEventBundle\Services\ElasticsearchService:
+    arguments: ['%client_event.elastic_host%']
+
+  ClientEventBundle\Services\HealthCheckService:
+    class: ClientEventBundle\Services\HealthCheckService
