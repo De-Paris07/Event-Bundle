@@ -3,6 +3,7 @@
 namespace ClientEventBundle\DependencyInjection;
 
 use ClientEventBundle\Event\QueryEvent;
+use Pheanstalk\PheanstalkInterface;
 use Symfony\Component\Config\Definition\Exception\InvalidConfigurationException;
 use Symfony\Component\Config\FileLocator;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
@@ -42,7 +43,13 @@ class ClientEventExtension extends Extension
     {
         $container->setParameter('client_event.service_name', $config['service_name']);
         $container->setParameter('client_event.host', $config['host']);
-        $container->setParameter('client_event.queue_host', $config['queue_host']);
+
+        $chanks = explode(':', $config['queue_host']);
+        $queueHost = $chanks[0];
+        $queuePort = $chanks[1] ?? PheanstalkInterface::DEFAULT_PORT;
+
+        $container->setParameter('client_event.queue_host', $queueHost);
+        $container->setParameter('client_event.queue_port', $queuePort);
         $container->setParameter('client_event.tcp_socket_port', $config['tcp_socket_port']);
         $container->setParameter('client_event.event_server_tcp_socket_port', $config['event_server_tcp_socket_port']);
         $container->setParameter('client_event.use_query', $config['use_query']);

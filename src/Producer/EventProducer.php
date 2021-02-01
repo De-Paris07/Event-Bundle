@@ -59,7 +59,8 @@ class EventProducer implements ProducerInterface
     ) {
         $this->container = $container;
         $host = $container->getParameter('client_event.queue_host');
-        $this->pheanstalk = new Pheanstalk($host);
+        $port = $container->getParameter('client_event.queue_port');
+        $this->pheanstalk = new Pheanstalk($host, $port);
         $this->queueService = $queueService;
         $this->validateService = $validateService;
         $this->logService = $logService;

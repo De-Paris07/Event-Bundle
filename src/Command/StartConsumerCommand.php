@@ -98,8 +98,9 @@ class StartConsumerCommand extends Command
         $this->eventDispatcher = $eventDispatcher;
         $this->container = $container;
         $host = $container->getParameter('client_event.queue_host');
+        $port = $container->getParameter('client_event.queue_port');
         $this->tube = $container->getParameter('client_event.service_name');
-        $this->pheanstalk = new Pheanstalk($host);
+        $this->pheanstalk = new Pheanstalk($host, $port);
         $this->eventsSubscribe = $container->getParameter('client_event.events_subscribe');
         $this->settingMemory = $container->getParameter('client_event.max_memory_use');
         $this->queueEventDispatcher = $queueEventDispatcher;

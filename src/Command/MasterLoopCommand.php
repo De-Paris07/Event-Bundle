@@ -131,7 +131,10 @@ class MasterLoopCommand extends Command
         $checkCommands = array_filter($commands, function (CommandInterface $command) {
            return $command->isConsumer() && !$command->isDaemon();
         });
-        $pheanstalk = new Pheanstalk($this->container->getParameter('client_event.queue_host'));
+        $pheanstalk = new Pheanstalk(
+            $this->container->getParameter('client_event.queue_host'),
+            $this->container->getParameter('client_event.queue_port')
+        );
         $checkTimer = $this->container->getParameter('client_event.job_channels_timer');
         
         $this->loop->addPeriodicTimer($checkTimer, function (TimerInterface $timer) use ($checkCommands, $pheanstalk) {
