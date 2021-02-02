@@ -248,11 +248,16 @@ class CommandLoop extends AbstractCommand
             foreach ($this->socketPid as $pid => $socket) {
                 $this->socket
                     ->setConnection($socket)
-                    ->write(new SocketMessage(Constants::SOCKET_CHANNEL_PING, []), null, function () use ($pid) {
-                        if (!is_null($process = $this->getProcess($pid))) {
-                            $this->restartProcess($process);
-                        }
-                });
+                    ->write(new SocketMessage(
+                        Constants::SOCKET_CHANNEL_PING, []),
+                        null,
+                        function () use ($pid) {
+                            if (!is_null($process = $this->getProcess($pid))) {
+                                $this->restartProcess($process);
+                            }
+                        },
+                        $this->getTimeoutSocketWrite()
+                    );
             }
         });
         

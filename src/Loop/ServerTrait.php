@@ -222,6 +222,18 @@ trait ServerTrait
                 ->write(new SocketMessage($message->getChannel(), $info, $message->getXid()));
         });
 
+        // получение состояния сервера с выделенного крона
+        $this->server->on(Constants::SOCKET_CHANNEL_HEALTH_CHECK_DATA, function (SocketMessageInterface $message) {
+            $memory = $message->getField('memory');
+            $cpu = $message->getField('cpu');
+            
+            if (is_null($memory) || is_null($cpu)) {
+                return;
+            }
+            
+            HealthChecker::setServerInfo($memory, $cpu);
+        });
+
         // логируем что отправили по сокету клиенты
         $this->server->on(SocketServer::SOCKET_RAW_MESSAGE, function ($message) {
             if (Constants::SOCKET_CHANNEL_CLIENT_JOB_READY === $message['channel'] ) {

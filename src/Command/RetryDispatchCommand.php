@@ -118,10 +118,9 @@ class RetryDispatchCommand extends Command
                         continue;
                     }
 
-                    /** @var ClientEventBundle\Event $event */
+                    /** @var \ClientEventBundle\Event $event */
                     $event = unserialize($eventDb->getData());
                     $this->queueEventDispatcher->dispatch($event->getEventName(), $event);
-//                    $eventDb->setStatus(Event::STATUS_DISPATH_SUCCESS);
                     $this->entityManager->remove($eventDb);
                     $this->entityManager->flush();
                 } catch (ProducerException $producerException) {

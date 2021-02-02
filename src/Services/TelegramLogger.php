@@ -54,8 +54,8 @@ class TelegramLogger
         $telegramConfig = $container->getParameter('client_event.telegram');
         $this->enabled = $telegramConfig['enabled'];
         $this->useProxy = $telegramConfig['use_proxy'];
-        $this->tokenBot = $telegramConfig['token'];
-        $this->proxy = $telegramConfig['socks5'];
+        $this->tokenBot = $telegramConfig['token'] ?? null;
+        $this->proxy = $telegramConfig['socks5'] ?? null;
         $this->guzzleClient = new Client();
         $this->chatId = 'prod' === $this->container->getParameter('kernel.environment') ?
             $container->getParameter('telegram.eventProd')['chat_id'] :

@@ -4,6 +4,7 @@ namespace ClientEventBundle\Annotation;
 
 use Doctrine\Common\Annotations\Annotation\Attribute;
 use Doctrine\Common\Annotations\Annotation\Attributes;
+use Doctrine\Common\Annotations\Annotation\Enum;
 
 /**
  * Class QueueRoute
@@ -22,6 +23,13 @@ class QueueRoute
 
     /** @var string $description */
     public $description;
+
+//    /**
+//     * @var string
+//     *
+//     * @Enum({"all", "less_loaded"})
+//     */
+//    public $strategy;
 
     /**
      * QueueRoute constructor.

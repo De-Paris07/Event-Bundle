@@ -25,11 +25,17 @@ class SocketClient extends AbstractSocket implements SocketClientInterface
     /** @var TimerInterface $reconnectTimer */
     private $reconnectTimer;
     
+    /** @var float $reconnectTime */
+    private $reconnectTime = 1;
+    
     /** @var bool $isClose */
     private $isClose = false;
     
     /** @var bool $isReconnect */
     private $isReconnect = true;
+    
+    /** @var array $connectOptions */
+    private $connectOptions = [];
 
     /**
      * @param string|null $uri
@@ -41,6 +47,7 @@ class SocketClient extends AbstractSocket implements SocketClientInterface
      */
     public function connect(string $uri = null, array $options = []): SocketInterface
     {
+        $this->connectOptions = $options;
         $this->isClose = false;
         
         if (!is_null($this->connection)) {
@@ -239,14 +246,34 @@ class SocketClient extends AbstractSocket implements SocketClientInterface
     }
 
     /**
-     * @param int $timeoutConnect
+     * @param float $timeoutConnect
      *
      * @return SocketClientInterface
      */
-    public function setTimeoutConnect(int $timeoutConnect): SocketClientInterface
+    public function setTimeoutConnect(float $timeoutConnect): SocketClientInterface
     {
         $this->timeoutConnect = $timeoutConnect;
 
+        return $this;
+    }
+
+    /**
+     * @return float
+     */
+    public function getReconnectTime()
+    {
+        return $this->reconnectTime;
+    }
+
+    /**
+     * @param float $reconnectTime
+     * 
+     * @return SocketClientInterface
+     */
+    public function setReconnectTime($reconnectTime): SocketClientInterface
+    {
+        $this->reconnectTime = $reconnectTime;
+        
         return $this;
     }
 
@@ -284,7 +311,7 @@ class SocketClient extends AbstractSocket implements SocketClientInterface
             return;
         }
         
-        $this->loop->addPeriodicTimer(1, function ($timer) {
+        $this->loop->addPeriodicTimer($this->reconnectTime, function ($timer) {
             $this->reconnectTimer = $timer;
             
             if ($this->isClose) {
@@ -300,7 +327,7 @@ class SocketClient extends AbstractSocket implements SocketClientInterface
                 echo 'Reconnect socket - "' . $this->uri . '"' . PHP_EOL;   
             }
 
-            $this->connect($this->uri);
+            $this->connect($this->uri, $this->connectOptions);
         });
     }
 }

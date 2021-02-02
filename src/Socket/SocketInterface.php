@@ -33,7 +33,12 @@ interface SocketInterface
      *
      * @return bool
      */
-    public function write(SocketMessageInterface $message, callable $callback = null, callable $timeoutCallback = null): bool;
+    public function write(
+        SocketMessageInterface $message,
+        callable $callback = null,
+        callable $timeoutCallback = null,
+        int $timeout = null
+    ): bool;
 
     /**
      * @param ConnectionInterface $connection

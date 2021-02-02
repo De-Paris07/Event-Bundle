@@ -191,6 +191,8 @@ class StartConsumerCommand extends Command
                     || (!$subscribeConfig['receive_historical_data'] && $systemEvent->isHistory())
                 ) {
                     $this->pheanstalk->delete($job);
+                    $systemEvent->setDelay(PheanstalkInterface::DEFAULT_DELAY);
+                    $this->queueEventDispatcher->dispatchSuccess($data['eventName'], $systemEvent);
                     
                     return;
                 }
@@ -297,27 +299,6 @@ class StartConsumerCommand extends Command
         $this->start();
 
         return 0;
-    }
-
-    /**
-     * @param Job $job
-     * @param int $ttr
-     * @param string $connection
-     * @return ProcessingJob
-     */
-    private function createProcessingJob(Job $job, int $ttr, string $connection): ProcessingJob
-    {
-        $processingJob = new ProcessingJob();
-        $processingJob->setJodId($job->getId());
-        $processingJob->setJob(serialize($job));
-        $processingJob->setTtr($ttr);
-        $processingJob->setStatus(ProcessingJob::STATUS_PROGRESS);
-        $processingJob->setCreated(new DateTime());
-
-        $this->container->get('doctrine.orm.entity_manager')->persist($processingJob);
-        $this->container->get('doctrine.orm.entity_manager')->flush();
-        
-        return $processingJob;
     }
 
     /**

@@ -10,11 +10,6 @@ use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Extension\Extension;
 use Symfony\Component\DependencyInjection\Loader;
 
-/**
- * Class ClientEventExtension
- *
- * @package ClientEventBundle\DependencyInjection
- */
 class ClientEventExtension extends Extension
 {
     /**
@@ -54,6 +49,8 @@ class ClientEventExtension extends Extension
         $container->setParameter('client_event.event_server_tcp_socket_port', $config['event_server_tcp_socket_port']);
         $container->setParameter('client_event.use_query', $config['use_query']);
         $container->setParameter('client_event.job_channels_timer', $config['job_channels_timer']);
+        $container->setParameter('client_event.server_health_send', $config['server_health_send']);
+        $container->setParameter('client_event.server_health_send_interval', $config['server_health_send_interval']);
 
         $config['events_subscribe']['queue.query'] = [
             'target_object' => get_class(new QueryEvent()),
@@ -101,12 +98,12 @@ class ClientEventExtension extends Extension
         $bots = $config['bots'];
 
         $container->setParameter('telegram.eventDev', [
-            'chat_id' => $chats['eventDev']['chat_id'] ?? '',
+            'chat_id' => $chats['eventDev']['chat_id'] ?? null,
             'environments' => $chats['eventDev']['environments'] ?? ['dev', 'test']
         ]);
 
         $container->setParameter('telegram.eventProd', [
-            'chat_id' => $chats['chat_id'] ?? '',
+            'chat_id' => $chats['chat_id'] ?? null,
             'environments' => $chats['eventProd']['environments'] ?? ['prod']
         ]);
         
@@ -136,7 +133,7 @@ class ClientEventExtension extends Extension
     }
 
     /**
-     * @param array $config
+     * @param $commands
      *
      * @return array
      */
@@ -185,6 +182,21 @@ class ClientEventExtension extends Extension
                 'count_job' => 20,
                 'timeout_create_instance' => 3,
                 'interval_tick' => 1,
+                'max_memory_use' => 50,
+                'enabled' => true,
+            ];
+        }
+
+        if (!isset($commands['healthCheck'])) {
+            $commands['healthCheck'] = [
+                'cmd' => 'event:server:state',
+                'consumer' => false,
+                'daemon' => false,
+                'min_instance_consumer' => 1,
+                'max_instance_consumer' => 1,
+                'count_job' => 20,
+                'timeout_create_instance' => 3,
+                'interval_tick' => 55,
                 'max_memory_use' => 50,
                 'enabled' => true,
             ];

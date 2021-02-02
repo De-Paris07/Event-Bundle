@@ -36,11 +36,23 @@ interface SocketClientInterface extends SocketInterface
     public function getTimeoutConnect(): int;
 
     /**
-     * @param int $timeoutConnect
+     * @param float $timeoutConnect
      *
      * @return SocketClientInterface
      */
-    public function setTimeoutConnect(int $timeoutConnect): SocketClientInterface;
+    public function setTimeoutConnect(float $timeoutConnect): SocketClientInterface;
+
+    /**
+     * @return float
+     */
+    public function getReconnectTime();
+
+    /**
+     * @param float $reconnectTime
+     *
+     * @return SocketClientInterface
+     */
+    public function setReconnectTime($reconnectTime): SocketClientInterface;
 
     /**
      * @return bool

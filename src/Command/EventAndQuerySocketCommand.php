@@ -4,6 +4,7 @@ namespace ClientEventBundle\Command;
 
 use ClientEventBundle\Loop\ClientTrait;
 use ClientEventBundle\Loop\Constants;
+use ClientEventBundle\Loop\LoopFactory;
 use ClientEventBundle\Loop\SocketMessage;
 use ClientEventBundle\Services\TelegramLogger;
 use ClientEventBundle\Socket\SocketClient;
@@ -11,6 +12,7 @@ use ClientEventBundle\Socket\SocketClientInterface;
 use ClientEventBundle\Socket\SocketMessageInterface;
 use ClientEventBundle\Socket\SocketServer;
 use ClientEventBundle\Socket\SocketServerInterface;
+use React\EventLoop\TimerInterface;
 use React\Socket\ConnectionInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -36,22 +38,25 @@ class EventAndQuerySocketCommand extends Command
     private $callbacks;
     
     /** @var SocketClientInterface $eventServer */
-    private $eventServer;
+    private $eventServerClient;
     
     /** @var SocketServerInterface $tcpServer */
     private $tcpServer;
     
     /** @var SocketServerInterface $unixServer */
     private $unixServer;
-    
-    /** @var SocketClientInterface $masterSocket */
-    private $masterSocket;
 
     /** @var TelegramLogger $telegramLogger */
     private $telegramLogger;
     
     /** @var array<ConnectionInterface> $clientConnections */
     private $clientConnections = [];
+    
+    /** @var int $serverHealthSendInterval */
+    private $serverHealthSendInterval;
+    
+    /** @var int $serviceName */
+    private $serviceName;
 
     /**
      * EventAndQuerySocketCommand constructor.
@@ -65,11 +70,13 @@ class EventAndQuerySocketCommand extends Command
 
         $this->container = $container;
         $this->telegramLogger = $telegramLogger;
-//        $this->eventServer = new SocketClient($this->getEventServerSocketUri());
+        $this->eventServerClient = new SocketClient($this->getEventServerSocketUri());
         $this->tcpServer = new SocketServer($this->getTcpSocketUri());
         $this->unixServer = new SocketServer($this->getUnixSocketUri());
         $this->unixServer->setMode(SocketServer::MODE_UNIX);
-        $this->masterSocket = new SocketClient('unix://' . $this->container->getParameter('client_event.socket_name'));
+        
+        $this->serverHealthSendInterval = $container->getParameter('client_event.server_health_send_interval');
+        $this->serviceName = $container->getParameter('client_event.service_name');
     }
 
     protected function configure()
@@ -92,16 +99,25 @@ class EventAndQuerySocketCommand extends Command
                 ->connect();
             $this->unixServer
                 ->connect();
-            $this->masterSocket
-                ->connect();
-//            $this->eventServer
-//                ->connect(null, ['happy_eyeballs' => false]);
+
+            if ($this->container->getParameter('client_event.server_health_send')) {
+                $this->eventServerClient
+                    ->setTimeoutConnect(10)
+                    ->connect(null, ['happy_eyeballs' => false]);
+            }
         } catch (Throwable $exception) {
             $this->telegramLogger->setFail($exception);
         }
 
         $this->handleEvent();
-        $this->start();
+        $this->sendServerInfoToEventServer();
+
+        try {
+            $this->start();   
+        } catch (Throwable $throwable) {
+            $this->telegramLogger->setFail($throwable);
+            throw $throwable;
+        }
 
         return 0;
     }
@@ -149,7 +165,7 @@ class EventAndQuerySocketCommand extends Command
         $this->tcpServer->on(Constants::SOCKET_CHANNEL_HEALTH_CHECK, function (SocketMessageInterface $message) {
             echo 'Пришел запрос о состоянии сервера ' . PHP_EOL;
             
-            $this->masterSocket
+            $this->clientSocket
                 ->setWaitForAnAnswer(true)
                 ->write(new SocketMessage(Constants::SOCKET_CHANNEL_HEALTH_CHECK),
                     function (SocketMessageInterface $response) use ($message) {
@@ -185,11 +201,54 @@ class EventAndQuerySocketCommand extends Command
     }
 
     /**
+     * Переодическая отправка метрик процессора и памяти на эвент-сервер
+     */
+    private function sendServerInfoToEventServer()
+    {
+        if (!$this->container->getParameter('client_event.server_health_send')) {
+            return;
+        }
+        
+        $this->eventServerClient->on(SocketClient::SOCKET_CONNECT_CHANNEL, function () {
+            $send = function () {
+                $this->clientSocket
+                    ->setWaitForAnAnswer(true)
+                    ->write(new SocketMessage(Constants::SOCKET_CHANNEL_HEALTH_CHECK),
+                        function (SocketMessageInterface $response) {
+                            $this->eventServerClient
+                                ->setWaitForAnAnswer(false)
+                                ->write(new SocketMessage(
+                                    Constants::SOCKET_CHANNEL_HEALTH_CHECK_DATA,
+                                    [
+                                        'serviceName' => $this->serviceName,
+                                        'memory' => $response->getField('memory'),
+                                        'cpu' => $response->getField('cpu'),
+                                    ]
+                                ));
+
+                            echo 'Отправили состояние сервера по расписанию ' . PHP_EOL;
+                        },
+                        function () {
+                            echo 'Мастер сокет не ответил на запрос состояния сервиса ' . PHP_EOL;
+                        }
+                    );
+            };
+            
+            LoopFactory::getLoop()->addPeriodicTimer($this->serverHealthSendInterval, function (TimerInterface $timer) use ($send) {
+                $send();
+            });
+            
+            $send();
+        });
+    }
+
+    /**
      * @return string
      */
     private function getTcpSocketUri(): string
     {
-        return $this->container->getParameter('client_event.host') . ':' . $this->container->getParameter('client_event.tcp_socket_port');
+        return $this->container->getParameter('client_event.host') . ':' 
+            . $this->container->getParameter('client_event.tcp_socket_port');
     }
 
     /**
@@ -205,7 +264,8 @@ class EventAndQuerySocketCommand extends Command
      */
     private function getEventServerSocketUri(): string
     {
-        return $this->container->getParameter('client_event.event_server_address') . ':' . $this->container->getParameter('client_event.event_server_tcp_socket_port');
+        return $this->container->getParameter('client_event.event_server_address') . ':' 
+            . $this->container->getParameter('client_event.event_server_tcp_socket_port');
     }
 
     /**

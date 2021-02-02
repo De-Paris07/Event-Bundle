@@ -25,7 +25,7 @@ use Symfony\Component\HttpFoundation\Response;
 class QueryClient implements QueryClientInterface
 {
     public const QUERY_EVENT_NAME = 'queue.query';
-    
+
     /** @var ProducerInterface $producer */
     private $producer;
 
@@ -106,19 +106,9 @@ class QueryClient implements QueryClientInterface
         $event->setRoute($route);
         $event->setQueryData($data);
         $event->setAdress($this->getTcpSocketUri());
-        
-        if (!$this->cacheService->checkRoute($route)) {
-            return $this->createResponse([
-                'status' => QueryResponse::STATUS_ERROR,
-                'message' => 'Rout not found',
-                'code' => Response::HTTP_NOT_FOUND,
-            ]);
-        }
 
         $loop = $this->blokking ? Factory::create() : LoopFactory::getLoop();
         $this->socket->setLoop($loop);
-
-//        $this->validate($event->getQueryData(), $this->cacheService->getRouteValidateSchema($route));
 
         $this->socket->on(SocketClient::SOCKET_CONNECT_CHANNEL, function () use ($event, $producer, $route, &$response) {
             $this->socket->setTimeoutSocketWrite($this->timeout)
@@ -319,17 +309,7 @@ class QueryClient implements QueryClientInterface
      */
     private function getTcpSocketUri(): string
     {
-        return $this->container->getParameter('client_event.host') . ':' . $this->container->getParameter('client_event.tcp_socket_port');
-    }
-
-    /**
-     * @param $data
-     * @param $validateSchema
-     *
-     * @return bool
-     */
-    private function validate($data, $validateSchema)
-    {
-        return true;
+        return $this->container->getParameter('client_event.host') . ':'
+            . $this->container->getParameter('client_event.tcp_socket_port');
     }
 }

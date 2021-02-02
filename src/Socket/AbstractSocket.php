@@ -97,8 +97,12 @@ abstract class AbstractSocket implements SocketInterface
      *
      * @return bool
      */
-    public function write(SocketMessageInterface $message, callable $callback = null, callable $timeoutCallback = null): bool
-    {
+    public function write(
+        SocketMessageInterface $message,
+        callable $callback = null,
+        callable $timeoutCallback = null,
+        int $timeout = null
+    ): bool {
         $timer = null;
 
         if (is_null($this->getConnection())) {
@@ -111,13 +115,15 @@ abstract class AbstractSocket implements SocketInterface
 
         if ($this->waitForAnAnswer) {
             // ставим таймер на ответ, если за это время не придет ответ, то вызовем колбэк
-            $timer = $this->loop->addTimer($this->timeoutSocketWrite, function (TimerInterface $timer) use ($timeoutCallback, $message) {
-                $this->removeAllListeners($message->getXid());
-                
-                if (!is_null($timeoutCallback) && is_callable($timeoutCallback)) {
-                    $timeoutCallback();
-                }
-            });
+            $timer = $this->loop->addTimer(
+                $timeout ?? $this->timeoutSocketWrite,
+                function (TimerInterface $timer) use ($timeoutCallback, $message) {
+                    $this->removeAllListeners($message->getXid());
+
+                    if (!is_null($timeoutCallback) && is_callable($timeoutCallback)) {
+                        $timeoutCallback();
+                    }
+                });
 
             // подписываемся на ответ запроса
             $this->on($message->getXid(), function (SocketMessageInterface $response) use ($callback, $timer, $message) {

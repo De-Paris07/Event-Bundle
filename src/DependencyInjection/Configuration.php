@@ -57,6 +57,8 @@ class Configuration implements ConfigurationInterface
                 ->booleanNode('use_query')->defaultFalse()->end()
                 ->integerNode('downtime_for_destruction')->defaultValue(5)->end()
                 ->floatNode('job_channels_timer')->defaultValue(1)->end()
+                ->booleanNode('server_health_send')->defaultFalse()->end()
+                ->integerNode('server_health_send_interval')->min(1)->max(3600)->defaultValue(60)->end()
                 ->integerNode('max_memory_use')
                     ->min(50)
                     ->max(1000)

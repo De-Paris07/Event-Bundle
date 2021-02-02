@@ -112,6 +112,12 @@ class QuerySubscriber implements EventSubscriberInterface
             return;
         }
         
+        if (stripos($event->getRoute(), '?') !== false) {
+            $route = explode('?', $event->getRoute());
+            $event->setRoute($route[0]);
+            unset($route);
+        }
+        
         if (!isset($this->configRoutes[$event->getRoute()])) {
             return;
         }

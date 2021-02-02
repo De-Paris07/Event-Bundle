@@ -18,6 +18,7 @@ class Constants
     const SOCKET_CHANNEL_PING = 'ping';
     const SOCKET_CHANNEL_PONG = 'pong';
     const SOCKET_CHANNEL_HEALTH_CHECK = 'health.check';
+    const SOCKET_CHANNEL_HEALTH_CHECK_DATA = 'health.check.data';
     const SOCKET_CHANNEL_SERVICES_LIST = 'services.list';
 
     const CHANNEL_CLIENT_CONSOLE = 'client.console';

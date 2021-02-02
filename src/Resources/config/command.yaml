@@ -16,8 +16,3 @@ services:
     arguments:
       - '@client_event.subscription_service'
       - '%client_event.event_server_address%'
-
-  ClientEventBundle\Command\TaskSupportInProcessingStatus:
-    arguments:
-      - '@service_container'
-      - '@doctrine.orm.entity_manager'

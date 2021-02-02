@@ -10,6 +10,8 @@ use ClientEventBundle\Loop\ServerTrait;
 use ClientEventBundle\Services\ConfigService;
 use ClientEventBundle\Services\TelegramLogger;
 use ClientEventBundle\Util\HealthChecker;
+use Pheanstalk\Exception\ConnectionException;
+use Pheanstalk\Exception\SocketException;
 use Pheanstalk\Pheanstalk;
 use React\EventLoop\TimerInterface;
 use React\Socket\ConnectionInterface;
@@ -93,10 +95,6 @@ class MasterLoopCommand extends Command
         $this->loop->addPeriodicTimer(600, function (TimerInterface $timer) {
            echo (new DateTime())->format('d-m-Y H:i:s.u') . " Process 'master' - " . getmypid() . ": memory -> " . memory_get_peak_usage(true) / 1024 / 1024 . PHP_EOL;
         });
-        
-        $this->loop->addPeriodicTimer(60, function (TimerInterface $serverInfoTimer) {
-            HealthChecker::changeServerInfo();
-        });
 
         $checkCommands = array_filter($commands, function (CommandInterface $command) {
             return $command->isConsumer() && !$command->isDaemon();
@@ -136,23 +134,28 @@ class MasterLoopCommand extends Command
             $this->container->getParameter('client_event.queue_port')
         );
         $checkTimer = $this->container->getParameter('client_event.job_channels_timer');
-        
-        $this->loop->addPeriodicTimer($checkTimer, function (TimerInterface $timer) use ($checkCommands, $pheanstalk) {
+        $checkQueue = function () use ($checkCommands, $pheanstalk) {
             /** @var CommandLoop $command */
             foreach ($checkCommands as $command) {
                 if ($command->getCountProcesses() > 0 || is_null($command->getTube())) {
                     continue;
                 }
-                
+
                 $pheanstalk->useTube('default');
                 $pheanstalk->useTube($command->getTube());
-                
+
                 if ((int) $pheanstalk->statsTube($command->getTube())['current-jobs-ready'] > 0) {
                     $command->start();
                 }
             }
-            
-            if ($pheanstalk->getConnection()->hasSocket()) {
+
+            $pheanstalk->useTube('default');
+        };
+        
+        $this->loop->addPeriodicTimer($checkTimer, function (TimerInterface $timer) use ($checkQueue, $pheanstalk) {
+            try {
+                $checkQueue();
+            } catch (SocketException | ConnectionException $exception) {
                 $pheanstalk->getConnection()->disconnect();
             }
         });

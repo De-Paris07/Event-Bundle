@@ -47,6 +47,16 @@ class HealthChecker
     }
 
     /**
+     * @param array $memory
+     * @param array $cpu
+     */
+    public static function setServerInfo(array $memory, array $cpu): void
+    {
+        self::$memory = $memory;
+        self::$cpu = $cpu;
+    }
+
+    /**
      * @return int
      */
     public static function getCpuCores()
@@ -117,6 +127,40 @@ class HealthChecker
         $response['swapTotal'] = self::convertSize($response['swapTotal']);
 
         return $response;
+    }
+
+    /**
+     * @return float
+     */
+    public static function getAverageCore(): float
+    {
+        $prevStat = shell_exec('cat /proc/stat | grep cpu | (head -1)');
+        $prevStat = str_replace(' ', ':', $prevStat);
+        $prevStat = explode(':', $prevStat);
+        unset($prevStat[0]);
+        $prevStat = array_values($prevStat);
+
+        usleep(100000);
+
+        $stat = shell_exec('cat /proc/stat | grep cpu | (head -1)');
+        $stat = str_replace(' ', ':', $stat);
+        $stat = explode(':', $stat);
+        unset($stat[0]);
+        $stat = array_values($stat);
+
+        $prevIdle = (int) $prevStat[4] + (int) $prevStat[5];
+        $idle = (int) $stat[4] + (int) $stat[5];
+
+        $prevNonIdle = (int) $prevStat[1] + (int) $prevStat[2] + (int) $prevStat[3] + (int) $prevStat[6] + (int) $prevStat[7] + (int) $prevStat[8];
+        $nonIdle = (int) $stat[1] + (int) $stat[2] + (int) $stat[3] + (int) $stat[6] + (int) $stat[7] + (int) $stat[8];
+
+        $prevTotal = $prevIdle + $prevNonIdle;
+        $total = $idle + $nonIdle;
+
+        $totald = $total - $prevTotal;
+        $idled = $idle - $prevIdle;
+
+        return round(($totald - $idled) / $totald * 100, 2);
     }
 
     /**

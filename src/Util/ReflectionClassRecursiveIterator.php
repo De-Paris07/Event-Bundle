@@ -14,7 +14,7 @@ class ReflectionClassRecursiveIterator
      * @return \Iterator
      * @throws \ReflectionException
      */
-    public static function getReflectionClassesFromDirectories(array $directories): \Iterator
+    public static function getReflectionClassesFromDirectories(array $directories, ?array $excludeDirectories = null): \Iterator
     {
         foreach ($directories as $path) {
             $iterator = new \RegexIterator(
@@ -31,6 +31,14 @@ class ReflectionClassRecursiveIterator
 
                 if (!preg_match('(^phar:)i', $sourceFile)) {
                     $sourceFile = realpath($sourceFile);
+                }
+
+                if (!is_null($excludeDirectories)) {
+                    foreach ($excludeDirectories as $directory) {
+                        if (mb_strpos($sourceFile, $directory) !== false) {
+                            continue(2);
+                        }
+                    }
                 }
 
                 require_once $sourceFile;
